@@ -14,8 +14,10 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
+import org.apache.activemq.artemis.api.core.RoutingType;
+import org.apache.activemq.artemis.api.core.SimpleString;
 import org.apache.activemq.artemis.api.core.management.ObjectNameBuilder;
-import org.apache.activemq.artemis.api.jms.management.JMSQueueControl;
+import org.apache.activemq.artemis.api.core.management.QueueControl;
 
 public class JmxOperations {
 
@@ -34,15 +36,15 @@ public class JmxOperations {
      */
     public List<String> browseTextMessagesFromQueue() throws Exception {
         final ObjectName objectName = ObjectNameBuilder.create(getDefaultJmxDomain(), "0.0.0.0", true)
-                .getJMSQueueObjectName(queueName);
+                .getQueueObjectName(SimpleString.toSimpleString(queueName), SimpleString.toSimpleString(queueName), RoutingType.ANYCAST);
 
         try (final JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(jmxUrl), emptyMap())) {
 
-            final JMSQueueControl queueControl = newProxyInstance(connector.getMBeanServerConnection(), objectName, JMSQueueControl.class, false);
+            final QueueControl queueControl = newProxyInstance(connector.getMBeanServerConnection(), objectName, QueueControl.class, false);
             final CompositeData[] compositeData = queueControl.browse("");
 
             return stream(compositeData)
-                    .map(cd -> String.valueOf(cd.get("Text")))
+                    .map(cd -> String.valueOf(cd.get("text")))
                     .collect(toList());
         }
     }
